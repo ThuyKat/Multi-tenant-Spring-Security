@@ -34,20 +34,32 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
     - set header as the tenant's name
     - test with username and password of the tenant's user
 4. List of newly added packages / classes:
+
 Config : 
+
     - SecurityConfig
     - CustomSuccessHandler
     - TenantFilter
     - WebConfig
+
 Controller:
+
     - RoutingTestController (for testing purpose )
+
 dto: (new package)
+
     - CustomUserDetails
+
 Entity/Tenant:
+
     -  User --> TenantUser ( just changed name)
+
 Repository/Tenant:
+
     - UserRepository --> TenantUserRepository
+
 Service:
+
     - CustomUserDetailsService
     - RoutingDBTestService ( for testing purpose)
     
