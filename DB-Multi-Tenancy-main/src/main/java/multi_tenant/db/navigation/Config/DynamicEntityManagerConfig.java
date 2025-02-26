@@ -22,18 +22,18 @@ public class DynamicEntityManagerConfig {
 
     public class EntityManagerFactorySelector {
         public EntityManagerFactory determineEntityManagerFactory(String tenantId) {
+        	
         	System.out.println(" I am determining Entity Manager Factory with tenantId: "+ tenantId);
             // If no tenant is specified, use global EntityManagerFactory
         	
             if (tenantId == null || tenantId.isEmpty()) {
                 return globalEntityManagerFactory();
-
             }
 
             // Use tenant-specific EntityManagerFactory
             return tenantEntityManagerFactory();
         }
-
+        
         private EntityManagerFactory globalEntityManagerFactory() {
             return globalDataSourceConfig
                 .globalEntityManagerFactory(
