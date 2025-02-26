@@ -10,7 +10,7 @@ public class TenantContext {
 
 	public static String getCurrentTenant() {
 		String tenant = CURRENT_TENANT.get();
-        System.out.println("I am in TenantContext, getting current tenant: " + tenant);
+        System.out.println("I am in TenantContext, getting current tenant: " + tenant + "thread ID:"+ Thread.currentThread().getId());
 		return tenant;
 	}
 	public static void setCurrentTenant(String databaseName) {
