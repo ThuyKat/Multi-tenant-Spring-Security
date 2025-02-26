@@ -39,6 +39,9 @@ public class SecurityConfig {
 	@Autowired
 	private TenantService tenantService;
 	
+	@Autowired
+	private JwtFilter jwtFilter;
+	
 	@Bean
 	public PasswordEncoder getPasswordEncoder() {
 //		 return PasswordEncoderFactories.createDelegatingPasswordEncoder();
@@ -49,7 +52,7 @@ public class SecurityConfig {
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		
 		http.addFilterBefore(tenantFilter, UsernamePasswordAuthenticationFilter.class)
-
+		.addFilterAt(jwtFilter, UsernamePasswordAuthenticationFilter.class)
 		.authorizeHttpRequests(
 				(requests) -> requests
 				.requestMatchers("/login/**")
