@@ -14,7 +14,7 @@ public class TenantRoutingDataSource extends AbstractRoutingDataSource{
 		
 	@Override
 	protected Object determineCurrentLookupKey() {	
-		System.out.println("I am in TenantRouting DS, determining the lookup key");
+		System.out.println("I am in TenantRouting DS, determining the lookup key on threadID: "+ Thread.currentThread().getId());
 		String tenant = TenantContext.getCurrentTenant();
         System.out.println("Routing to database: " + tenant);
 
