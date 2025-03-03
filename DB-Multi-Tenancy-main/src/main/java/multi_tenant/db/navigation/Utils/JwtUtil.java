@@ -1,13 +1,17 @@
 package multi_tenant.db.navigation.Utils;
 
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
 
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +31,19 @@ public class JwtUtil {
 	
 	public String extractUsername(String token) {
 		return extractClaim(token, Claims::getSubject);
+	}
+	
+	public List<SimpleGrantedAuthority> extractAuthorities(String token) {
+		  List<String> authorities = extractClaim(token, claims -> 
+	        claims.get("authorities", List.class));
+	    
+	    if (authorities != null) {
+	        return authorities.stream()
+	            .map(SimpleGrantedAuthority::new)
+	            .collect(Collectors.toList());
+	    }
+	    
+	    return Collections.emptyList();
 	}
 
 	public Date extractExpiration(String token) {
@@ -57,16 +74,40 @@ public class JwtUtil {
 		return extractExpiration(token).before(new Date());
 	}
 
-	// most important: taking userDetails into jwt
+	// generate access token
 	public String generateToken(UserDetails userDetails) {
 		Map<String, Object> claims = new HashMap<>();
+		
+	    // Extract authorities from UserDetails and add to claims
+		
+	    List<String> authorities = userDetails.getAuthorities().stream()
+	        .map(authority -> authority.getAuthority())
+	        .collect(Collectors.toList()); // this returns a list of authority string, not GrantedAuthority type
+	    
+	    claims.put("authorities", authorities);
+	    
 		return createToken(claims, userDetails.getUsername());
 	}
-
+	
+	//generate refresh token
+	public String generateRefreshToken(UserDetails userDetails) {
+		Map<String, Object> claims = new HashMap<>(); 
+		return createToken(claims, userDetails.getUsername());
+	}
+	
+	//access token-valid for 1 day
 	private String createToken(Map<String, Object> claims, String subject) {
 
 		return Jwts.builder().claims(claims).subject(subject).issuedAt(new Date(System.currentTimeMillis()))
-				.expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)).signWith(getSigningKey1())
+				.expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)).signWith(getSigningKey1()) 
+				.compact();
+
+	}
+	//refresh token-valid for 7 days
+	private String createRefreshToken(Map<String, Object> claims, String subject) {
+
+		return Jwts.builder().claims(claims).subject(subject).issuedAt(new Date(System.currentTimeMillis()))
+				.expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24*7)).signWith(getSigningKey1()) 
 				.compact();
 
 	}
