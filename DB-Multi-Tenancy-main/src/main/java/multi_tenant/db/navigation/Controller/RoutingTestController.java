@@ -1,11 +1,22 @@
 package multi_tenant.db.navigation.Controller;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletRequest;
 import multi_tenant.db.navigation.Service.RoutingDBTestService;
+import multi_tenant.db.navigation.Utils.TenantContext;
 
 
 @RestController
@@ -16,8 +27,36 @@ public class RoutingTestController {
 	private RoutingDBTestService testService;
 	
 	@GetMapping("/welcome")
-	public String getWelcomeMessage() {
-        return testService.getWelcomeMessage();
+	public Map<String, Object> getWelcomeMessage(HttpServletRequest request,Authentication authentication) {
+		String message = testService.getWelcomeMessage();
+		String email = null;
+		String jwt = (String) request.getSession().getAttribute("jwt_token");
+		String dbName = TenantContext.getCurrentTenant();
+		List<String> authorities = new ArrayList<>();
+		String authHeader = request.getHeader("Authorization");
+		
+		if(jwt == null) {
+			jwt="Login by Jwt";
+		}
+	        
+        if (authentication != null && authentication.isAuthenticated()) {
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            email = userDetails.getUsername();
+            authorities = userDetails.getAuthorities().stream().map(auth -> auth.getAuthority()).collect(Collectors.toList());
+        }
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", message);
+        response.put("jwt", jwt);
+        response.put("email", email);
+        response.put("authorities", authorities);
+        response.put("db", dbName);
+        
+        return response; //Spring automatically converts to JSON
+		
+		
+//        return testService.getWelcomeMessage();
 
 	}
+	
+	
 }
