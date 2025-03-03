@@ -52,7 +52,7 @@ public class SecurityConfig {
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		
 		http.addFilterBefore(tenantFilter, UsernamePasswordAuthenticationFilter.class)
-		.addFilterAt(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+		.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
 		.authorizeHttpRequests(
 				(requests) -> requests
 				.requestMatchers("/login/**")
