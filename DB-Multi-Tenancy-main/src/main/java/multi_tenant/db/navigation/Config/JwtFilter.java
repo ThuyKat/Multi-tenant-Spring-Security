@@ -64,7 +64,10 @@ public class JwtFilter extends OncePerRequestFilter {
 				if (authorities.stream().anyMatch(auth -> auth.getAuthority().equals("ROLE_OWNER")))  {
 					System.out.println("JwtFilter: setting role for user as owner");
 					TenantContext.setCurrentUserRole("OWNER");
-				}
+				}else if (authorities.stream().anyMatch(auth -> auth.getAuthority().equals("ROLE_DEVELOPER"))) {
+			        System.out.println("JwtFilter: setting role for user as developer");
+			        TenantContext.setCurrentUserRole("DEVELOPER");
+			    }
 				// runtime poly
 				UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
 				
