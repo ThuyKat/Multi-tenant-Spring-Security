@@ -1,8 +1,12 @@
 package multi_tenant.db.navigation.Service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import multi_tenant.db.navigation.Utils.TenantContext;
 
@@ -11,11 +15,14 @@ public class RoutingDBTestService {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+        
 
     public String getWelcomeMessage() {
         try {
             // Ensure the correct tenant database is being used
             String currentTenant = TenantContext.getCurrentTenant();
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String email = authentication != null ? authentication.getName() : null;
             System.out.println("getting welcome message in  "+ currentTenant);
             if (currentTenant == null || currentTenant.isEmpty()) {
                 throw new IllegalStateException("No tenant database selected");
@@ -33,9 +40,12 @@ public class RoutingDBTestService {
             	
             	System.out.println("getting welcome messsage from tenant DB" + currentTenant);
             	// Query for user name
-                String userName = jdbcTemplate.queryForObject(
-                    "SELECT name FROM users LIMIT 1", String.class);
-                return "Welcome " + userName;	
+            	String name = jdbcTemplate.queryForObject(
+            		    "SELECT name FROM users WHERE email = ?", 
+            		    String.class,
+            		    email);
+            		return "Welcome " + name;
+	
             }
 
         } catch (EmptyResultDataAccessException e) {
