@@ -39,7 +39,7 @@ public class Developer {
 
 	@Enumerated(EnumType.STRING)
 	@Column
-	private Role role;
+	private Role role; //DEVELOPER
 
 	@Column(name = "created_at")
 	@CreationTimestamp
