@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
 import java.util.List;
 
 import javax.sql.DataSource;
@@ -23,7 +24,6 @@ import multi_tenant.db.navigation.Utils.TenantRoutingDataSource;
 
 @Service
 public class TenantService {
-    private ApplicationContext applicationContext;
     @Autowired
     private TenantRepository tenantRepository;
     @Autowired
@@ -42,6 +42,11 @@ public class TenantService {
 	}
 	public Tenant getDatabaseNameByShopId(String shopName) {
 		return tenantRepository.findByName(shopName);
+	}
+	
+	public List<Tenant> getTenantsByOwnerId(Long ownerId){
+		List<Tenant> tenants = tenantRepository.findByOwnerId(ownerId);
+		return tenants.isEmpty() ? Collections.emptyList() : tenants;
 	}
 	
 	@Transactional(transactionManager = "globalTransactionManager") //to rollback if error occurs
