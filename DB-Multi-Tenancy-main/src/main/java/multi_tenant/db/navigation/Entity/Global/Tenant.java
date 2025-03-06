@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -44,6 +46,7 @@ public class Tenant {
 	
 	@ManyToOne
 	@JoinColumn(name="owner_id")
+	@JsonBackReference
 	private Owner owner;
 	
 	public enum Status{
