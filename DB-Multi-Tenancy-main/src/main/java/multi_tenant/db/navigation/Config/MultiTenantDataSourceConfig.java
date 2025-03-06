@@ -17,6 +17,7 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.jpa.repository.support.JpaRepositoryFactoryBean;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -37,9 +38,6 @@ transactionManagerRef = "tenantTransactionManager")
 public class MultiTenantDataSourceConfig {
 
 	@Autowired
-	private TenantService tenantService;
-
-	@Autowired
 	private DataSourceUtil dataSourceUtil;
 	private static final Logger logger = LoggerFactory.getLogger(MultiTenantDataSourceConfig.class);
 	
@@ -47,44 +45,52 @@ public class MultiTenantDataSourceConfig {
 	@Bean
 	public TenantRoutingDataSource multiTenantDataSource() {
 		TenantRoutingDataSource tenantRoutingDataSource = new TenantRoutingDataSource();
-		Map<Object, Object> dataSourceMap = new HashMap<>();
-
-		List<Tenant> tenants = tenantService.getAllTenant();
-		
-		if (tenants.isEmpty()) {
-			System.out.print("No tenant found");
-		} else {
-			for (Tenant tenant : tenants) {
-				System.out.println(" I am in Multitenant DS Config, adding tenants"+tenant.getDbName());
-				dataSourceMap.put(tenant.getDbName(), dataSourceUtil.createDataSource(tenant.getDbName()));
-			}
-		}
-		
-		DataSource defaultDataSource = dataSourceUtil.createDataSource("global_multi_tenant");
-		dataSourceMap.put("default", defaultDataSource);
-
-		tenantRoutingDataSource.setTargetDataSources(dataSourceMap);
-		tenantRoutingDataSource.setDefaultTargetDataSource(defaultDataSource);
-		tenantRoutingDataSource.afterPropertiesSet();
-
-		System.out.println("added default DS"+ defaultDataSource);
-		
+//		Map<Object, Object> dataSourceMap = new HashMap<>();
+//
+//		List<Tenant> tenants = tenantService.getAllTenant();
+//		
+//		if (tenants.isEmpty()) {
+//			System.out.print("No tenant found");
+//		} else {
+//			for (Tenant tenant : tenants) {
+//				System.out.println(" I am in Multitenant DS Config, adding tenants"+tenant.getDbName());
+//				dataSourceMap.put(tenant.getDbName(), dataSourceUtil.createDataSource(tenant.getDbName()));
+//			}
+//		}
+//		
+//		DataSource defaultDataSource = dataSourceUtil.createDataSource("global_multi_tenant");
+//		dataSourceMap.put("default", defaultDataSource);
+//
+//		tenantRoutingDataSource.setTargetDataSources(dataSourceMap);
+//		tenantRoutingDataSource.setDefaultTargetDataSource(defaultDataSource);
+//		tenantRoutingDataSource.afterPropertiesSet();
+//
+//		System.out.println("added default DS"+ defaultDataSource);
+		//add default DataSource
+		tenantRoutingDataSource.addDataSource("default", dataSourceUtil.createDataSource("global_multi_tenant"));
+				
 		return tenantRoutingDataSource;
 	}
 
 	@Bean(name = "tenantEntityManagerFactory")
-//	@DependsOn("flyway") 
-	public LocalContainerEntityManagerFactoryBean tenantEntityManagerFactory(EntityManagerFactoryBuilder builder,
-			DataSource multiTenantDataSource) {
-		System.out.println("I am in tenant entity manager factory");
-		return builder.dataSource(multiTenantDataSource()).packages("multi_tenant.db.navigation.Entity.Tenant") 																												
-				.persistenceUnit("tenantPU").build();
-	}
+	@DependsOn("multiTenantDataSource") 
+	 public LocalContainerEntityManagerFactoryBean tenantEntityManagerFactory(
+	            EntityManagerFactoryBuilder builder,
+	            @Qualifier("multiTenantDataSource") DataSource multiTenantDataSource) {
+	        logger.info("Creating tenant entity manager factory");
+	        return builder
+	            .dataSource(multiTenantDataSource)  // Use the injected parameter
+	            .packages("multi_tenant.db.navigation.Entity.Tenant")
+	            .persistenceUnit("tenant")  
+	            .build();
+	    }
 
 	@Bean(name = "tenantTransactionManager")
 	public PlatformTransactionManager tenantTransactionManager(
-			@Qualifier("tenantEntityManagerFactory") EntityManagerFactory entityManagerFactory) {		System.out.println("I am in tenant entity manager factory");
+			@Qualifier("tenantEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
 			System.out.println("I am in tenant transaction manager");
 		return new JpaTransactionManager(entityManagerFactory);
 	}
+	
+	
 }
