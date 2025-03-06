@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import multi_tenant.db.navigation.Service.RoutingDBTestService;
 import multi_tenant.db.navigation.Utils.TenantContext;
@@ -30,14 +31,18 @@ public class RoutingTestController {
 	public Map<String, Object> getWelcomeMessage(HttpServletRequest request,Authentication authentication) {
 		String message = testService.getWelcomeMessage();
 		String email = null;
-		String jwt = (String) request.getSession().getAttribute("jwt_token");
+		String jwt = null;
 		String dbName = TenantContext.getCurrentTenant();
 		List<String> authorities = new ArrayList<>();
-		String authHeader = request.getHeader("Authorization");
 		
-		if(jwt == null) {
-			jwt="Login by Jwt";
+		String authorizationHeader = request.getHeader("Authorization");
+
+		if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+		    jwt = authorizationHeader.substring(7); // Remove "Bearer " prefix
+		    
 		}
+		
+		
 	        
         if (authentication != null && authentication.isAuthenticated()) {
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
