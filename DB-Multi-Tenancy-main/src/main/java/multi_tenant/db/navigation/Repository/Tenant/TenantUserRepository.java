@@ -10,4 +10,6 @@ import multi_tenant.db.navigation.Entity.Tenant.TenantUser;
 @Repository
 public interface TenantUserRepository extends JpaRepository<TenantUser, Long>{
 	Optional<TenantUser> findByEmail(String email);
+
+//	TenantUser findByEmailWithPermissions(String email);
 }
