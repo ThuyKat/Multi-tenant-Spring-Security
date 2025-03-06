@@ -1,11 +1,16 @@
 package multi_tenant.db.navigation.Config;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -13,6 +18,9 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import multi_tenant.db.navigation.Entity.Global.Owner;
+import multi_tenant.db.navigation.Entity.Global.Tenant;
+import multi_tenant.db.navigation.Service.OwnerService;
 import multi_tenant.db.navigation.Service.TenantService;
 import multi_tenant.db.navigation.Utils.TenantContext;
 
@@ -23,6 +31,7 @@ public class TenantFilter extends OncePerRequestFilter{
 //	private final TenantService tenantService;
     private static final Logger logger = LoggerFactory.getLogger(TenantFilter.class);
 
+   
 	@Autowired
 	public TenantFilter(ObjectProvider<TenantService> tenantServiceProvider) {
 		this.tenantServiceProvider = tenantServiceProvider;
@@ -32,6 +41,7 @@ public class TenantFilter extends OncePerRequestFilter{
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
 		System.out.println("I am in tenant filter");
+		
 		try {
 			TenantService tenantService = tenantServiceProvider.getIfAvailable();
 
@@ -51,24 +61,35 @@ public class TenantFilter extends OncePerRequestFilter{
             
             if (userGlobalRole !=null) {
         		TenantContext.setCurrentUserRole(userGlobalRole);
-            }else {
-            	if(shopName == null) {
-            		//userGlobalRole == null and shopName == null
-            		TenantContext.setCurrentUserRole("DEVELOPER"); //default is developer if user does not define userRole
-            	}
-            		//userGlobalRole == null and shopName !=null ==> role of user is in tenant db
-            	
             }
-            
+//            else {
+//            	if(shopName == null) {
+//            		//userGlobalRole == null and shopName == null
+//            		TenantContext.setCurrentUserRole("DEVELOPER"); //default is developer if user does not define userRole
+//            	}
+            		//userGlobalRole == null and shopName !=null ==> proceed to jwt to see if jwt has info about user's role
+            	
+//            }
 
             if (shopName == null) {
                 logger.warn("Shop-name header missing");
                 TenantContext.setCurrentTenant("default");
             } else {
-            	 String databaseName = tenantService.getDatabaseNameByShopId(shopName).getDbName();
-                 TenantContext.setCurrentTenant(databaseName);
-                 logger.info("Setting DB to: {} in thread: {}", databaseName, Thread.currentThread().getId());
+        		// shop is specified
+        		Tenant tenant = tenantService.getDatabaseNameByShopId(shopName);
+                if (tenant != null && tenant.getDbName() != null) {
+                    TenantContext.setCurrentTenant(tenant.getDbName());
+                    logger.info("Setting DB to: {} in thread: {}", tenant.getDbName(), Thread.currentThread().getId());
+                } else {
+                    logger.warn("Tenant not found for shop: {}, using default", shopName);
+                    TenantContext.setCurrentTenant("default");
+                }
+                 logger.info("Setting DB to: {} in thread: {}", tenant.getDbName(), Thread.currentThread().getId());
+        
             }
+            	
+            	
+            
 
             filterChain.doFilter(request, response);
         } finally {
