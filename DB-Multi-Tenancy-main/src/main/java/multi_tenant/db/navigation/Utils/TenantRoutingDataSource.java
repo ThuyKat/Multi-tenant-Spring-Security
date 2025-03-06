@@ -1,16 +1,26 @@
 package multi_tenant.db.navigation.Utils;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.sql.DataSource;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
+import org.springframework.scheduling.annotation.Scheduled;
+
+import com.zaxxer.hikari.HikariDataSource;
 
 
 public class TenantRoutingDataSource extends AbstractRoutingDataSource{
 	
+	@Autowired
+	private DataSourceUtil dataSourceUtil;
+	
 	private final Map<Object, Object> dataSourceMap = new ConcurrentHashMap<>();
+	private final Map<Object, Long> lastUsedTime = new ConcurrentHashMap<>();
+
 		
 	@Override
 	protected Object determineCurrentLookupKey() {	
@@ -21,23 +31,35 @@ public class TenantRoutingDataSource extends AbstractRoutingDataSource{
 		return tenant != null ? tenant : "default";
 	}
 
-	//hibernatea
-	// avoid null pointer execption if databaseName not exist
-	public DataSource getDataSource(String databaseName) {
-		System.out.println("I am getting dataSource "+ databaseName);
-		 DataSource dataSource= (DataSource) dataSourceMap.getOrDefault(databaseName, getDefaultDataSource()); 
-		 return dataSource;
+	@Override
+	protected DataSource determineTargetDataSource() {
+		String tenant = (String) determineCurrentLookupKey();
+
+		dataSourceMap.computeIfAbsent(tenant, key -> {
+			System.out.println("[Lazy Init] Creating DataSource for tenant: " + tenant);
+			lastUsedTime.put(tenant, System.currentTimeMillis()); // save time when the connection starts
+			return dataSourceUtil.createDataSource(tenant);
+		});
+
+		lastUsedTime.put(tenant, System.currentTimeMillis()); // update connection time to the new time
+		return (DataSource) dataSourceMap.get(tenant);
 	}
-	//hibernate
-	public DataSource getDefaultDataSource() {
-		System.out.println(" I am getting default dataSource");
-		DataSource defaultDS = (DataSource) dataSourceMap.get("default");
-        if (defaultDS == null) {
-            throw new IllegalStateException("Default datasource not configured");
-        }
-        return defaultDS;
+
+	@Scheduled(fixedRate = 10 * 60 * 1000) // 10 mins
+	public void removeUnsedDataSources() {
+		long now = System.currentTimeMillis();
+		long threshold = 30 * 60 * 1000; // 30 mins
+
+		for (Object tenant : new HashSet<>(dataSourceMap.keySet())) { // copy tenant key set to new hashSet,
+																		// avoid ConcurrentModificationException
+			if (now - lastUsedTime.getOrDefault(tenant, 0L) > threshold) {
+				((HikariDataSource) dataSourceMap.remove(tenant)).close(); // remove then return HikariDataSource
+																			// instance, then close
+				lastUsedTime.remove(tenant);
+			}
+		}
+
 	}
-	
     public void addDataSource(String databaseName, DataSource dataSource) {
     	System.out.println("I am adding dataSource name: "+ databaseName);
     	if(!dataSourceMap.containsKey(databaseName)) {
