@@ -36,9 +36,10 @@ public class CustomUserDetailsService implements UserDetailsService{
 	
 	@Override
 	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-		
+		System.out.println("I am in custom user details service");
+		System.out.println("email: "+email);
 		// Check header/tenant context to decide which repo to use
-        String dbName = TenantContext.getCurrentTenant();
+        String dbName = TenantContext.getCurrentTenant(); //null
         String userRole = TenantContext.getCurrentUserRole();
         if (dbName.equals("global_multi_tenant") || dbName.equals("default")) {
         	System.out.println("I am in Custom User Details Service, db name is pointing to global");
@@ -46,8 +47,9 @@ public class CustomUserDetailsService implements UserDetailsService{
         	if(userRole.equals("DEVELOPER")) {
         		// Use developer table
         		Developer developer = developerRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("Developer Not found: " + email));
+        		
         		List<GrantedAuthority> authorities = new ArrayList<>();
-        		authorities.add(new SimpleGrantedAuthority("ROLE_DEVELOPER"));
+        		authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
                 return new CustomUserDetails(
                 		developer.getEmail(),
                 		developer.getPassword(),
@@ -71,8 +73,8 @@ public class CustomUserDetailsService implements UserDetailsService{
                 		);
         		
         	}
-        	System.out.println("I am in Custom User Details Service, no user found");
-        	return null;
+    	System.out.println("I am in Custom User Details Service, no user found");
+    	return null;
         	
         
         }else {
@@ -81,7 +83,7 @@ public class CustomUserDetailsService implements UserDetailsService{
                 TenantUser tenantUser = tenantUserRepository.findByEmail(email)
                     .orElseThrow(() -> new UsernameNotFoundException("Tenant User Not found: " + email));
                 List<GrantedAuthority> authorities = new ArrayList<>();
-        		authorities.add(new SimpleGrantedAuthority("ROLE_"+tenantUser.getUserRole().name()));
+        		authorities.add(new SimpleGrantedAuthority("ROLE_"+tenantUser.getRole().getName()));
                 return new CustomUserDetails(
                     tenantUser.getEmail(),
                     tenantUser.getPassword(),
