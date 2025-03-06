@@ -36,6 +36,7 @@ public class DataSourceConfig {
     private DataSourceUtil dataSourceUtil;
 
     @Bean(name = "globalDataSource")
+    @Primary
     public DataSource globalDataSource() {
     	System.out.println("this is global datasource");
         return dataSourceUtil.createDataSource("global_multi_tenant");
