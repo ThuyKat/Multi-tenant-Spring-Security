@@ -1,8 +1,11 @@
 package multi_tenant.db.navigation.Service;
 
-import java.util.List;
+
+import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Bean;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
@@ -13,14 +16,22 @@ import multi_tenant.db.navigation.Utils.TenantContext;
 @Service
 public class RoutingDBTestService {
 
+ 
+	 private final JdbcTemplate jdbcTemplate;
+	    
+	    @Autowired
+	    public RoutingDBTestService(@Qualifier("multiTenantDataSource") DataSource dataSource) {
+	        System.out.println("Creating JdbcTemplate with multiTenantDataSource");
+	        this.jdbcTemplate = new JdbcTemplate(dataSource);
+	    }
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-        
+    UserService userService;
 
     public String getWelcomeMessage() {
         try {
             // Ensure the correct tenant database is being used
             String currentTenant = TenantContext.getCurrentTenant();
+            System.out.println("current tenant to get welcome message:"+ currentTenant);
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String email = authentication != null ? authentication.getName() : null;
             System.out.println("getting welcome message in  "+ currentTenant);
@@ -40,10 +51,7 @@ public class RoutingDBTestService {
             	
             	System.out.println("getting welcome messsage from tenant DB" + currentTenant);
             	// Query for user name
-            	String name = jdbcTemplate.queryForObject(
-            		    "SELECT name FROM users WHERE email = ?", 
-            		    String.class,
-            		    email);
+            	String name = userService.getUserByEmail(email).getName();
             		return "Welcome " + name;
 	
             }
