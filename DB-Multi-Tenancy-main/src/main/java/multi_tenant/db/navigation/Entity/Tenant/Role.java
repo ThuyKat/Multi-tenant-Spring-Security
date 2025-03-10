@@ -3,6 +3,8 @@ package multi_tenant.db.navigation.Entity.Tenant;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.context.annotation.Conditional;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.JoinColumn;
@@ -18,17 +20,19 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import multi_tenant.db.navigation.Config.TenantDatabaseCondition;
 
 @Data
 @NoArgsConstructor	
 @AllArgsConstructor
 @Entity
 @Table(name="roles")
+@Conditional(TenantDatabaseCondition.class)  // Only create for tenant databases
 public class Role {
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private int id;
+	private Long id;
 	
 	@Column (nullable = false, length = 30)
 	private String name;

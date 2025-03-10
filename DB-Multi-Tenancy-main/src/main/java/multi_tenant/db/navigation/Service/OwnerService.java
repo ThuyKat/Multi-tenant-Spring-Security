@@ -13,6 +13,7 @@ import multi_tenant.db.navigation.Repository.Global.OwnerRepository;
 @Service
 public class OwnerService {
 
+	
 	@Autowired
 	private OwnerRepository ownerRepository;
 	

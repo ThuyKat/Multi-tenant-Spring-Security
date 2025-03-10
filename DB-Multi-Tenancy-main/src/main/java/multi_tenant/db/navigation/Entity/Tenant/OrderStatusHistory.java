@@ -2,13 +2,15 @@ package multi_tenant.db.navigation.Entity.Tenant;
 
 import java.time.LocalDateTime;
 
-import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.context.annotation.Conditional;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -19,40 +21,35 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import multi_tenant.db.navigation.Config.TenantDatabaseCondition;
-import multi_tenant.db.navigation.Enum.Status;
+import multi_tenant.db.navigation.Enum.OrderStatus;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @Entity
-@Table(name = "users")
+@Table(name = "order_status_history")
 @Conditional(TenantDatabaseCondition.class)  // Only create for tenant databases
-public class TenantUser {
+public class OrderStatusHistory {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@Column(nullable = false, unique = true, length = 45)
-	private String name;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
+    @JsonBackReference
+    private Order order;
 
-	@Column(nullable = false, unique = true, length = 100)
-	private String email;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private OrderStatus status;
 
-	@Column(nullable = false, length = 255)
-	private String password;
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
 
-	@ManyToOne
-	@JoinColumn(name = "role_id") //have column role_id in users
-	private Role role;
-	
-	@Enumerated(EnumType.STRING)
-	@Column
-	private Status status;
-
-	@Column(name = "created_at")
-	@CreationTimestamp
-	private LocalDateTime createdAt;
-
-	
+    @ManyToOne (fetch = FetchType.LAZY)
+    @JoinColumn(name = "updated_by_user_id")
+    @JsonBackReference
+    private TenantUser updatedBy;
 }
+
